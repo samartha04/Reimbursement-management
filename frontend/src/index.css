@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bg text-ink-1 font-sans antialiased min-h-screen text-[14px] leading-relaxed;
+  }
+}
+
+@layer components {
+  /* Pills */
+  .pill {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-[20px] text-[11.5px] font-medium whitespace-nowrap;
+  }
+  .pill-approved { @apply bg-green-bg text-green-text; }
+  .pill-pending { @apply bg-amber-bg text-amber-text; }
+  .pill-rejected { @apply bg-red-bg text-red-text; }
+  .pill-draft { @apply bg-surface2 text-ink-2; }
+  .pill-dot { @apply w-[5px] h-[5px] rounded-full bg-current; }
+  
+  /* Approval Chain Mini Nodes */
+  .chain-step {
+    @apply w-[22px] h-[22px] rounded-full flex items-center justify-center text-[9px] font-semibold border-[1.5px] border-transparent;
+  }
+  .chain-step.done { @apply bg-green-bg text-green-text border-green-mid; }
+  .chain-step.active { @apply bg-amber-bg text-amber-text border-amber-text; }
+  .chain-step.next { @apply bg-surface2 text-ink-3 border-border2; }
+  .chain-step.rej { @apply bg-red-bg text-red-text border-red-text; }
+  
+  /* Timeline Detail Nodes */
+  .tl-dot {
+    @apply w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[10px] font-semibold relative z-10 border-[1.5px];
+  }
+  .tl-dot.done { @apply bg-green-bg text-green-text border-green-mid; }
+  .tl-dot.active { @apply bg-amber-bg text-amber-text border-amber-text; }
+  .tl-dot.next { @apply bg-surface2 text-ink-3 border-border2; }
+  .tl-dot.rej { @apply bg-red-bg text-red-text border-red-text; }
+
+  /* Universal Cards */
+  .card {
+    @apply bg-surface border border-border1 rounded-[14px] overflow-hidden;
+  }
+  .stat-card {
+    @apply bg-surface border border-border1 rounded-[14px] p-4 flex flex-col;
+  }
+  
+  /* Form Inputs and Buttons */
+  .input-field {
+    @apply w-full bg-surface border border-border2 rounded-[8px] p-2.5 text-[13.5px] text-ink-1 outline-none transition-colors focus:border-green-mid placeholder-ink-3;
+  }
+  .btn-primary {
+    @apply flex items-center justify-center gap-1.5 px-4 py-2 bg-green-text hover:bg-green-mid transition-colors text-white text-[13px] font-medium rounded-[8px] border-none;
+  }
+  .btn-ghost {
+    @apply flex items-center justify-center gap-1.5 px-3.5 py-2 bg-surface hover:bg-surface2 transition-colors text-ink-2 text-[13px] rounded-[8px] border border-border2 cursor-pointer;
+  }
+}

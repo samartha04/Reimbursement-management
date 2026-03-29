@@ -1,0 +1,86 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Company {
+  id       Int       @id @default(autoincrement())
+  name     String
+  currency String    @default("INR")
+  users    User[]
+  expenses Expense[]
+  rules    ApprovalRule[]
+}
+
+model User {
+  id                Int       @id @default(autoincrement())
+  company           Company   @relation(fields: [companyId], references: [id])
+  companyId         Int
+  name              String
+  email             String    @unique
+  passwordHash      String
+  role              String    // ADMIN | MANAGER | EMPLOYEE
+  manager           User?     @relation("UserManager", fields: [managerId], references: [id])
+  managerId         Int?
+  directReports     User[]    @relation("UserManager")
+  isManagerApprover Boolean   @default(false)
+  expenses          Expense[]
+  approvalSteps     ApprovalStep[]
+  rulesApprover     ApprovalRule[] @relation("SpecificApprover")
+}
+
+model Expense {
+  id            Int            @id @default(autoincrement())
+  company       Company        @relation(fields: [companyId], references: [id])
+  companyId     Int
+  submitter     User           @relation(fields: [submittedById], references: [id])
+  submittedById Int
+  amount        Float
+  currency      String         @default("INR")
+  category      String
+  description   String
+  date          DateTime
+  status        String         // PENDING | IN_REVIEW | APPROVED | REJECTED
+  createdAt     DateTime       @default(now())
+  approvalSteps ApprovalStep[]
+  autoApprovedByRuleId Int?
+  autoApprovedByRule   ApprovalRule? @relation(fields: [autoApprovedByRuleId], references: [id])
+  submittedCurrency String     @default("INR")
+  submittedAmount   Float      @default(0)
+  companyCurrency   String     @default("INR")
+  companyAmount     Float      @default(0)
+  exchangeRate      Float      @default(1)
+  receiptImageUrl   String?
+}
+
+model ApprovalStep {
+  id         Int       @id @default(autoincrement())
+  expense    Expense   @relation(fields: [expenseId], references: [id])
+  expenseId  Int
+  approver   User      @relation(fields: [approverId], references: [id])
+  approverId Int
+  sequence   Int
+  status     String    // PENDING | APPROVED | REJECTED
+  comment    String?
+  decidedAt  DateTime?
+}
+
+model ApprovalRule {
+  id                  Int       @id @default(autoincrement())
+  company             Company   @relation(fields: [companyId], references: [id])
+  companyId           Int
+  name                String
+  isActive            Boolean   @default(true)
+  ruleType            String    // PERCENTAGE | SPECIFIC_APPROVER | HYBRID
+  percentageThreshold Int?
+  specificApprover    User?     @relation("SpecificApprover", fields: [specificApproverId], references: [id])
+  specificApproverId  Int?
+  createdAt           DateTime  @default(now())
+  expensesTriggered   Expense[]
+}
