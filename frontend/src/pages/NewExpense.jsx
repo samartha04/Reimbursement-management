@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, UploadCloud, ImageIcon, Info } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, UploadCloud, ImageIcon, Info, X } from 'lucide-react';
 import api from '../api';
 import { getCurrencySymbol } from '../utils';
 import Tesseract from 'tesseract.js';
@@ -28,9 +28,12 @@ function NewExpense({ user }) {
   const [autoFilledFields, setAutoFilledFields] = useState([]); // tracks which fields got filled by OCR
   const [showBanner, setShowBanner] = useState(false);
 
-  // Currency Preview states
   const [preview, setPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [showManagerNotice, setShowManagerNotice] = useState(true);
+
+  const isManager = user?.role === 'MANAGER';
+  const hasApproverAbove = user?.managerId && user?.manager?.isManagerApprover;
   
   const navigate = useNavigate();
   const timeoutRef = useRef(null);
@@ -265,6 +268,22 @@ function NewExpense({ user }) {
       
       <div className="font-disp text-[26px] font-light tracking-tight text-ink-1 leading-tight mb-2">New Claim</div>
       <div className="text-ink-3 text-[13px] mb-8">Submit a new expense reimbursement request.</div>
+
+      {isManager && showManagerNotice && (
+        <div className="bg-blue-50 border-l-4 border-blue-500 mb-6 p-4 rounded-r-md1 flex justify-between items-start animate-in fade-in">
+          <div className="flex gap-3">
+             <Info size={18} className="text-blue-500 mt-0.5 shrink-0" />
+             <div className="text-[13px] text-blue-900 font-medium mt-0.5">
+               {hasApproverAbove 
+                 ? `Since you are a manager, your submission will be reviewed by ${user.manager.name} before final approval` 
+                 : `Your submission will go directly to Admin for approval`}
+             </div>
+          </div>
+          <button type="button" onClick={() => setShowManagerNotice(false)} className="text-blue-500/70 hover:text-blue-500 transition-colors ml-4 mt-0.5 shrink-0">
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {showBanner && (
         <div className="bg-amber-bg border-l-4 border-amber-text mb-6 p-4 rounded-r-md1 flex gap-3 animate-in slide-in-from-top-2">

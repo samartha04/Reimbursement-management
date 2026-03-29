@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus, Shield, CheckCircle, Plus, Trash2 } from 'lucide-react';
 import api from '../api';
+import SkeletonRow from '../SkeletonRow';
 
 function AdminUsers({ user }) {
   const [users, setUsers] = useState([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [rules, setRules] = useState([]);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showAddRule, setShowAddRule] = useState(false);
@@ -16,7 +18,10 @@ function AdminUsers({ user }) {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const fetchUsers = () => api.get('/users').then(res => setUsers(res.data)).catch(console.error);
+  const fetchUsers = () => {
+    setIsLoadingUsers(true);
+    api.get('/users').then(res => setUsers(res.data)).catch(console.error).finally(() => setIsLoadingUsers(false));
+  };
   const fetchRules = () => api.get('/rules').then(res => setRules(res.data)).catch(console.error);
 
   useEffect(() => {
@@ -170,37 +175,60 @@ function AdminUsers({ user }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border1">
-                {users.map(u => (
-                  <tr key={u.id} className="hover:bg-surface2 transition-colors">
-                    <td className="p-5 align-middle">
-                      <div className="flex items-center gap-3">
-                        <div className="w-[32px] h-[32px] rounded-full bg-surface text-ink-2 text-[10px] font-semibold flex items-center justify-center border border-border2">
-                          {getInitials(u.name)}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-ink-1 text-[13.5px]">{u.name} {u.id === user.id ? <span className="text-green-mid ml-1 font-normal text-[11px]">(You)</span> : ''}</div>
-                          <div className="text-[12px] text-ink-3">{u.email}</div>
-                        </div>
+                {isLoadingUsers ? (
+                  <>
+                    <SkeletonRow cols={4} />
+                    <SkeletonRow cols={4} />
+                    <SkeletonRow cols={4} />
+                    <SkeletonRow cols={4} />
+                  </>
+                ) : users.length <= 1 ? (
+                  <tr>
+                    <td colSpan="4">
+                      <div className="py-20 flex flex-col items-center justify-center text-center">
+                        <svg className="w-16 h-16 text-ink-3 mb-4 currentColor" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                          <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        <h3 className="text-[16px] font-semibold text-ink-1 mb-1">No team members yet</h3>
+                        <p className="text-[13px] text-ink-3 max-w-[250px] mb-6">Add employees and managers to get started</p>
+                        <button onClick={() => setShowAddUser(true)} className="btn-primary">Add User</button>
                       </div>
                     </td>
-                    <td className="p-5 align-middle">
-                      <select value={u.role} onChange={(e) => handleUpdateRole(u.id, e.target.value)} disabled={u.id === user.id} className="bg-bg border border-border2 rounded-[6px] py-1.5 px-2 text-[12.5px] text-ink-2 outline-none w-32 cursor-pointer disabled:opacity-50 hover:border-green-mid">
-                        <option value="EMPLOYEE">EMPLOYEE</option><option value="MANAGER">MANAGER</option><option value="ADMIN">ADMIN</option>
-                      </select>
-                    </td>
-                    <td className="p-5 align-middle">
-                      <select value={u.managerId || ''} onChange={(e) => handleUpdateManager(u.id, e.target.value)} disabled={u.id === user.id} className="bg-bg border border-border2 rounded-[6px] py-1.5 px-2 text-[12.5px] text-ink-2 outline-none w-48 cursor-pointer disabled:opacity-50 hover:border-green-mid">
-                        <option value="">-- No Direct Line --</option>
-                        {users.filter(other => other.id !== u.id).map(other => <option key={other.id} value={other.id}>{other.name}</option>)}
-                      </select>
-                    </td>
-                    <td className="p-5 align-middle">
-                      <button onClick={() => handleToggleApprover(u.id, u.isManagerApprover)} disabled={u.id === user.id && u.role === 'ADMIN'} className={`pill ${u.isManagerApprover ? 'pill-approved cursor-pointer hover:bg-green-mid hover:text-white' : 'pill-draft cursor-pointer border border-border2 hover:bg-surface'} disabled:opacity-50`}>
-                        {u.isManagerApprover ? <><span className="pill-dot"></span>Approver Active</> : 'No Approval Privileges'}
-                      </button>
-                    </td>
                   </tr>
-                ))}
+                ) : (
+                  users.map(u => (
+                    <tr key={u.id} className="hover:bg-surface2 transition-colors">
+                      <td className="p-5 align-middle">
+                        <div className="flex items-center gap-3">
+                          <div className="w-[32px] h-[32px] rounded-full bg-surface text-ink-2 text-[10px] font-semibold flex items-center justify-center border border-border2">
+                            {getInitials(u.name)}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-ink-1 text-[13.5px]">{u.name} {u.id === user.id ? <span className="text-green-mid ml-1 font-normal text-[11px]">(You)</span> : ''}</div>
+                            <div className="text-[12px] text-ink-3">{u.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-5 align-middle">
+                        <select value={u.role} onChange={(e) => handleUpdateRole(u.id, e.target.value)} disabled={u.id === user.id} className="bg-bg border border-border2 rounded-[6px] py-1.5 px-2 text-[12.5px] text-ink-2 outline-none w-32 cursor-pointer disabled:opacity-50 hover:border-green-mid">
+                          <option value="EMPLOYEE">EMPLOYEE</option><option value="MANAGER">MANAGER</option><option value="ADMIN">ADMIN</option>
+                        </select>
+                      </td>
+                      <td className="p-5 align-middle">
+                        <select value={u.managerId || ''} onChange={(e) => handleUpdateManager(u.id, e.target.value)} disabled={u.id === user.id} className="bg-bg border border-border2 rounded-[6px] py-1.5 px-2 text-[12.5px] text-ink-2 outline-none w-48 cursor-pointer disabled:opacity-50 hover:border-green-mid">
+                          <option value="">-- No Direct Line --</option>
+                          {users.filter(other => other.id !== u.id).map(other => <option key={other.id} value={other.id}>{other.name}</option>)}
+                        </select>
+                      </td>
+                      <td className="p-5 align-middle">
+                        <button onClick={() => handleToggleApprover(u.id, u.isManagerApprover)} disabled={u.id === user.id && u.role === 'ADMIN'} className={`pill ${u.isManagerApprover ? 'pill-approved cursor-pointer hover:bg-green-mid hover:text-white' : 'pill-draft cursor-pointer border border-border2 hover:bg-surface'} disabled:opacity-50`}>
+                          {u.isManagerApprover ? <><span className="pill-dot"></span>Approver Active</> : 'No Approval Privileges'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

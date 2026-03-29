@@ -49,7 +49,40 @@ function ExpenseDetail({ user }) {
   }
 
   if (loading || !expense) {
-    return <div className="p-8 text-center text-ink-3 text-[13px]">Loading...</div>;
+    return (
+      <div className="h-full p-[28px] px-[24px] animate-[pulse_1.5s_infinite]">
+        <div className="h-4 bg-surface2 rounded w-24 mb-3"></div>
+        <div className="h-6 bg-surface2 rounded w-64 mb-6"></div>
+        
+        <div className="bg-bg border border-border1 rounded-[8px] p-4 mb-5 shadow-sm">
+           <div className="h-8 bg-surface2 rounded w-40 mb-2"></div>
+           <div className="h-4 bg-surface2 rounded w-32"></div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 mb-8">
+          <div className="bg-bg rounded-[8px] h-14"></div>
+          <div className="bg-bg rounded-[8px] h-14"></div>
+          <div className="bg-bg rounded-[8px] h-14"></div>
+          <div className="bg-bg rounded-[8px] h-14"></div>
+        </div>
+
+        <div className="text-[10.5px] font-semibold tracking-[.07em] uppercase text-ink-3 mb-4">Approval Timeline</div>
+        <div className="space-y-4">
+          <div className="flex gap-3 items-center">
+             <div className="w-6 h-6 rounded-full bg-surface2 shrink-0"></div>
+             <div className="h-4 bg-surface2 rounded w-32"></div>
+          </div>
+          <div className="flex gap-3 items-center">
+             <div className="w-6 h-6 rounded-full bg-surface2 shrink-0"></div>
+             <div className="h-4 bg-surface2 rounded w-48"></div>
+          </div>
+          <div className="flex gap-3 items-center">
+             <div className="w-6 h-6 rounded-full bg-surface2 shrink-0"></div>
+             <div className="h-4 bg-surface2 rounded w-24"></div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const handleApprove = async (action) => {

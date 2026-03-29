@@ -33,6 +33,7 @@ model User {
   expenses          Expense[]
   approvalSteps     ApprovalStep[]
   rulesApprover     ApprovalRule[] @relation("SpecificApprover")
+  notifications     Notification[]
 }
 
 model Expense {
@@ -83,4 +84,16 @@ model ApprovalRule {
   specificApproverId  Int?
   createdAt           DateTime  @default(now())
   expensesTriggered   Expense[]
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // "EXPENSE_APPROVED" | "EXPENSE_REJECTED" | "APPROVAL_REQUIRED"
+  title     String
+  body      String
+  expenseId Int?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

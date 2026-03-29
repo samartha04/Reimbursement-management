@@ -56,3 +56,8 @@
     @apply flex items-center justify-center gap-1.5 px-3.5 py-2 bg-surface hover:bg-surface2 transition-colors text-ink-2 text-[13px] rounded-[8px] border border-border2 cursor-pointer;
   }
 }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

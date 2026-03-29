@@ -13,7 +13,7 @@ function Signup({ setUser }) {
     setLoading(true);
     try {
       const { data } = await api.post('/auth/signup', formData);
-      localStorage.setItem('token', data.token);
+      sessionStorage.setItem('token', data.token);
       setUser(data.user);
       navigate('/dashboard');
     } catch (err) {

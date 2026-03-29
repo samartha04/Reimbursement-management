@@ -41,7 +41,7 @@ const authMiddleware = (roles = []) => async (req, res, next) => {
     const payload = jwt.verify(token, JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: payload.id },
-      include: { company: true },
+      include: { company: true, manager: true },
     });
     if (!user) return res.status(401).json({ error: 'Unauthorized: user not found' });
     if (roles.length && !roles.includes(user.role)) {
@@ -324,6 +324,15 @@ app.post('/api/expenses', authMiddleware([]), async (req, res) => {
           status: 'PENDING',
         },
       });
+      await prisma.notification.create({
+        data: {
+          userId: manager.id,
+          type: 'APPROVAL_REQUIRED',
+          title: 'New expense pending your review',
+          body: `${req.user.name} submitted a ${submittedCurrency}${submittedAmount} ${category} claim`,
+          expenseId: expense.id
+        }
+      });
     }
 
     res.json(expense);
@@ -412,7 +421,7 @@ app.post('/api/expenses/:id/approve', authMiddleware([]), async (req, res) => {
     const expenseId = parseInt(req.params.id);
     const expense = await prisma.expense.findUnique({
       where: { id: expenseId },
-      include: { approvalSteps: { orderBy: { sequence: 'asc' } } }
+      include: { approvalSteps: { orderBy: { sequence: 'asc' } }, submitter: true }
     });
 
     if (!expense) return res.status(404).json({ error: 'Expense not found' });
@@ -427,6 +436,19 @@ app.post('/api/expenses/:id/approve', authMiddleware([]), async (req, res) => {
          where: { expenseId, status: 'PENDING' },
          data: { status: finalStatus, comment: comment || 'Admin Override', decidedAt: new Date() }
       });
+      
+      await prisma.notification.create({
+        data: {
+          userId: expense.submitter.id,
+          type: action === 'APPROVE' ? 'EXPENSE_APPROVED' : 'EXPENSE_REJECTED',
+          title: action === 'APPROVE' ? 'Your expense was approved' : 'Your expense was rejected',
+          body: action === 'APPROVE' 
+            ? `Your ${expense.submittedCurrency}${expense.submittedAmount} ${expense.category} claim has been fully approved`
+            : `Your ${expense.submittedCurrency}${expense.submittedAmount} ${expense.category} claim was rejected by Admin: ${comment || 'Admin Override'}`,
+          expenseId: expense.id
+        }
+      });
+      
       return res.json({ success: true, message: 'Admin override executed' });
     }
 
@@ -447,6 +469,15 @@ app.post('/api/expenses/:id/approve', authMiddleware([]), async (req, res) => {
       await prisma.expense.update({
         where: { id: expenseId },
         data: { status: 'REJECTED' },
+      });
+      await prisma.notification.create({
+        data: {
+          userId: expense.submitter.id,
+          type: 'EXPENSE_REJECTED',
+          title: 'Your expense was rejected',
+          body: `Your ${expense.submittedCurrency}${expense.submittedAmount} ${expense.category} claim was rejected by ${req.user.name}: ${comment || 'No comment'}`,
+          expenseId: expense.id
+        }
       });
       return res.json({ success: true });
     } 
@@ -484,6 +515,15 @@ app.post('/api/expenses/:id/approve', authMiddleware([]), async (req, res) => {
         where: { id: expenseId },
         data: { status: 'APPROVED', autoApprovedByRuleId: autoApprovedByRule.id },
       });
+      await prisma.notification.create({
+        data: {
+          userId: expense.submitter.id,
+          type: 'EXPENSE_APPROVED',
+          title: 'Your expense was approved',
+          body: `Your ${expense.submittedCurrency}${expense.submittedAmount} ${expense.category} claim has been fully approved`,
+          expenseId: expense.id
+        }
+      });
       return res.json({ success: true });
     }
 
@@ -499,10 +539,28 @@ app.post('/api/expenses/:id/approve', authMiddleware([]), async (req, res) => {
           status: 'PENDING'
         }
       });
+      await prisma.notification.create({
+        data: {
+          userId: nextManager.id,
+          type: 'APPROVAL_REQUIRED',
+          title: 'New expense pending your review',
+          body: `${expense.submitter.name} submitted a ${expense.submittedCurrency}${expense.submittedAmount} ${expense.category} claim`,
+          expenseId: expense.id
+        }
+      });
     } else {
       await prisma.expense.update({
         where: { id: expenseId },
         data: { status: 'APPROVED' },
+      });
+      await prisma.notification.create({
+        data: {
+          userId: expense.submitter.id,
+          type: 'EXPENSE_APPROVED',
+          title: 'Your expense was approved',
+          body: `Your ${expense.submittedCurrency}${expense.submittedAmount} ${expense.category} claim has been fully approved`,
+          expenseId: expense.id
+        }
       });
     }
 
@@ -511,7 +569,43 @@ app.post('/api/expenses/:id/approve', authMiddleware([]), async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
+// Notification Routes
+app.get('/api/notifications', authMiddleware([]), async (req, res) => {
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    });
+    res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
+app.patch('/api/notifications/read-all', authMiddleware([]), async (req, res) => {
+  try {
+    await prisma.notification.updateMany({
+      where: { userId: req.user.id, isRead: false },
+      data: { isRead: true }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/notifications/:id/read', authMiddleware([]), async (req, res) => {
+  try {
+    await prisma.notification.updateMany({
+      where: { id: req.params.id, userId: req.user.id },
+      data: { isRead: true }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

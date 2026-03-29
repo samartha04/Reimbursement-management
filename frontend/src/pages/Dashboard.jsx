@@ -3,11 +3,13 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, Plus, Filter } from 'lucide-react';
 import api from '../api';
 import { getCurrencySymbol } from '../utils';
+import SkeletonRow from '../SkeletonRow';
 
 function Dashboard({ user }) {
   const [expenses, setExpenses] = useState([]);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -18,7 +20,11 @@ function Dashboard({ user }) {
         navigate('/login');
         return;
     }
-    api.get('/expenses').then(res => setExpenses(res.data)).catch(console.error);
+    setIsLoading(true);
+    api.get('/expenses')
+      .then(res => setExpenses(res.data))
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
   }, [user, navigate]);
 
   if (!user) return null;
@@ -150,43 +156,91 @@ function Dashboard({ user }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border1">
-              {filtered.map(e => (
-                <tr 
-                  key={e.id} 
-                  onClick={() => navigate(`/expenses/${e.id}`)}
-                  className={`cursor-pointer transition-colors hover:bg-surface2 ${e.id === selectedId ? 'bg-green-bg/50' : ''}`}
-                >
-                  <td className="p-4 align-middle">
-                    <div className="font-medium text-[13.5px] text-ink-1 break-words max-w-xs">{e.description}</div>
-                    <div className="text-[12px] text-ink-3 mt-0.5">{e.category} {e.submitter?.id !== user.id ? ` • ${e.submitter?.name}` : ''}</div>
-                  </td>
-                  <td className="p-4 align-middle relative">
-                    <div className="font-mono text-[13.5px] font-medium text-ink-1">
-                      {getCurrencySymbol(e.companyCurrency)}{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits:2 }).format(e.companyAmount)}
+              {isLoading ? (
+                <>
+                  <SkeletonRow cols={5} />
+                  <SkeletonRow cols={5} />
+                  <SkeletonRow cols={5} />
+                  <SkeletonRow cols={5} />
+                  <SkeletonRow cols={5} />
+                </>
+              ) : expenses.length === 0 ? (
+                <tr>
+                  <td colSpan="5">
+                    <div className="py-20 flex flex-col items-center justify-center text-center">
+                      {user.role === 'EMPLOYEE' ? (
+                        <>
+                          <svg className="w-16 h-16 text-ink-3 mb-4 currentColor" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M4 2v20l2-2 2 2 2-2 2 2 2-2 2 2 2-2 2 2V2l-2 2-2-2-2 2-2-2-2 2-2-2-2 2z"/>
+                            <path d="M16 14H8"/>
+                            <path d="M16 10H8"/>
+                            <path d="M10 6H8"/>
+                          </svg>
+                          <h3 className="text-[16px] font-semibold text-ink-1 mb-1">No expenses yet</h3>
+                          <p className="text-[13px] text-ink-3 max-w-[250px] mb-6">Submit your first claim and track its approval in real time</p>
+                          <Link to="/expenses/new" className="btn-primary">Submit Expense</Link>
+                        </>
+                      ) : user.role === 'ADMIN' ? (
+                        <>
+                          <svg className="w-16 h-16 text-ink-3 mb-4 currentColor" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="20" x2="18" y2="10"/>
+                            <line x1="12" y1="20" x2="12" y2="4"/>
+                            <line x1="6" y1="20" x2="6" y2="14"/>
+                          </svg>
+                          <h3 className="text-[16px] font-semibold text-ink-1 mb-1">No expenses submitted yet</h3>
+                          <p className="text-[13px] text-ink-3 max-w-[250px]">Expenses submitted by your team will appear here</p>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-16 h-16 text-ink-3 mb-4 currentColor" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="m9 12 2 2 4-4"/>
+                          </svg>
+                          <h3 className="text-[16px] font-semibold text-ink-1 mb-1">You're all caught up</h3>
+                          <p className="text-[13px] text-ink-3 max-w-[250px]">No expenses are waiting for your approval right now</p>
+                        </>
+                      )}
                     </div>
-                    {e.submittedCurrency !== e.companyCurrency && (
-                       <div className="text-[11px] text-ink-3 mt-0.5" title={`Original: ${e.submittedAmount} ${e.submittedCurrency}`}>
-                         <span className="font-mono">{getCurrencySymbol(e.submittedCurrency)}{e.submittedAmount}</span>
-                       </div>
-                    )}
-                  </td>
-                  <td className="p-4 align-middle">
-                    {getStatusBadge(e.status)}
-                  </td>
-                  <td className="p-4 align-middle">
-                    {getChainHtml(e.approvalSteps)}
-                  </td>
-                  <td className="p-4 align-middle text-[12.5px] text-ink-3">
-                    {new Date(e.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </td>
                 </tr>
-              ))}
-              {filtered.length === 0 && (
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="text-center p-8 text-ink-3 text-[13px]">
                     No expenses match this filter.
                   </td>
                 </tr>
+              ) : (
+                filtered.map(e => (
+                  <tr 
+                    key={e.id} 
+                    onClick={() => navigate(`/expenses/${e.id}`)}
+                    className={`cursor-pointer transition-colors hover:bg-surface2 ${e.id === selectedId ? 'bg-green-bg/50' : ''}`}
+                  >
+                    <td className="p-4 align-middle">
+                      <div className="font-medium text-[13.5px] text-ink-1 break-words max-w-xs">{e.description}</div>
+                      <div className="text-[12px] text-ink-3 mt-0.5">{e.category} {e.submitter?.id !== user.id ? ` • ${e.submitter?.name}` : ''}</div>
+                    </td>
+                    <td className="p-4 align-middle relative">
+                      <div className="font-mono text-[13.5px] font-medium text-ink-1">
+                        {getCurrencySymbol(e.companyCurrency)}{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits:2 }).format(e.companyAmount)}
+                      </div>
+                      {e.submittedCurrency !== e.companyCurrency && (
+                         <div className="text-[11px] text-ink-3 mt-0.5" title={`Original: ${e.submittedAmount} ${e.submittedCurrency}`}>
+                           <span className="font-mono">{getCurrencySymbol(e.submittedCurrency)}{e.submittedAmount}</span>
+                         </div>
+                      )}
+                    </td>
+                    <td className="p-4 align-middle">
+                      {getStatusBadge(e.status)}
+                    </td>
+                    <td className="p-4 align-middle">
+                      {getChainHtml(e.approvalSteps)}
+                    </td>
+                    <td className="p-4 align-middle text-[12.5px] text-ink-3">
+                      {new Date(e.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

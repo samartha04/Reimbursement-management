@@ -14,7 +14,7 @@ function Login({ setUser }) {
     setLoading(true);
     try {
       const { data } = await api.post('/auth/login', { email, password });
-      localStorage.setItem('token', data.token);
+      sessionStorage.setItem('token', data.token);
       setUser(data.user);
       navigate('/dashboard');
     } catch (err) {
@@ -68,14 +68,6 @@ function Login({ setUser }) {
         </p>
       </div>
       
-      <div className="mt-8 bg-surface2 border border-border2 p-5 rounded-md1 text-[12.5px] text-ink-2 max-w-[400px] w-full text-center">
-        <p className="font-semibold text-ink-1 mb-2">Demo Credentials (pass: demo1234):</p>
-        <ul className="space-y-1.5">
-          <li><strong>Admin:</strong> admin@demo.com</li>
-          <li><strong>Manager:</strong> manager@demo.com</li>
-          <li><strong>Employee:</strong> employee@demo.com</li>
-        </ul>
-      </div>
     </div>
   );
 }
