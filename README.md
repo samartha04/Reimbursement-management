@@ -94,11 +94,5 @@ JWT_SECRET="super-secret-key-change-in-production"
 
 # Backend Server Port
 PORT=3001
-```
 
-## 🏆 Project Origins
 
-Developed for the **Odoo Hackathon** targeting the *Reimbursement Management* Problem Statement. Focused on delivering a highly robust, scalable, and intuitive enterprise application.
-
----
-*Built with passion for seamless enterprise user experiences.*
